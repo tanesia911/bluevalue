@@ -1,9 +1,19 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import yfinance as yf
+import requests
 import traceback
-import os
 import time
+import os
+
+# yfinance rate limit 우회 — 브라우저처럼 보이게 설정
+YF_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+}
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
@@ -29,8 +39,10 @@ def analyze():
     ticker = normalize_ticker(raw)
 
     try:
-        t = yf.Ticker(ticker)
-        time.sleep(1)
+        session = requests.Session()
+        session.headers.update(YF_HEADERS)
+        t = yf.Ticker(ticker, session=session)
+        time.sleep(0.5)
         info = t.info
 
         if not info or info.get('regularMarketPrice') is None and info.get('currentPrice') is None:
@@ -41,6 +53,7 @@ def analyze():
 
         # ── 6개월 주가 ───────────────────────────────────────────────────
         hist = t.history(period='6mo', interval='1mo')
+        time.sleep(0.3)
         price_history = []
         for date, row in hist.iterrows():
             price_history.append({
@@ -205,5 +218,5 @@ def static_files(path):
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
