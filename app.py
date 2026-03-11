@@ -3,6 +3,7 @@ from flask_cors import CORS
 import yfinance as yf
 import traceback
 import os
+import time
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
@@ -29,6 +30,7 @@ def analyze():
 
     try:
         t = yf.Ticker(ticker)
+        time.sleep(1)
         info = t.info
 
         if not info or info.get('regularMarketPrice') is None and info.get('currentPrice') is None:
